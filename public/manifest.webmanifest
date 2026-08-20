@@ -3,8 +3,7 @@
   "short_name": "DL Timeline",
   "description": "Privacy-first cross-device activity timeline with cloud sync, device management, parental locks and usage analytics.",
   "developer": {
-    "name": "MA Ameen",
-    "url": "https://lovable.dev"
+    "name": "MA Ameen"
   },
   "start_url": "/dashboard",
   "scope": "/",

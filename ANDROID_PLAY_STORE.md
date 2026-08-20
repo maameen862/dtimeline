@@ -17,7 +17,7 @@ Requires: Node 18+, JDK 17, Android SDK (Bubblewrap can install them for you).
 
 ```bash
 npm i -g @bubblewrap/cli
-bubblewrap init --manifest https://project--5e5d5a09-5786-4ac7-b6f7-fcb7b0117073.lovable.app/manifest.webmanifest
+bubblewrap init --manifest ./public/manifest.webmanifest
 # (twa-manifest.json in this repo has the values already filled in)
 bubblewrap build          # produces app-release-bundle.aab + app-release-signed.apk
 ```

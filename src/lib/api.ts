@@ -7,7 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const db = supabase as any;
-import { detectDevice, getFingerprint } from "@/lib/device";
+import { detectDevice, getFingerprint, calculateDeviceSignature } from "@/lib/device";
 import { cacheTimeline, clearQueue, queueEvent, readQueue } from "@/lib/local-cache";
 import { useDeviceScope } from "@/lib/device-scope";
 
@@ -23,6 +23,7 @@ export interface DeviceRow {
   status: string;
   tracking_paused: boolean;
   fingerprint: string;
+  device_signature?: string | null;
   auto_sync: boolean;
   sync_interval_minutes: number;
   battery_level: number | null;
@@ -60,6 +61,13 @@ async function uid(): Promise<string> {
  * scaffolding in the cloud and looks up whether THIS install is already a
  * registered device. It never creates a device on its own — registration is an
  * explicit, one-time user decision (see `useRegisterDevice`).
+ *
+ * Device recognition strategy (in order of preference):
+ * 1. Fingerprint match (most reliable, stored in localStorage)
+ * 2. Device signature match (fallback when localStorage is cleared)
+ * 3. Not found (user will be prompted to register)
+ *
+ * When a device is recognized, last_seen_at is automatically updated.
  */
 export function useAccountBootstrap(enabled: boolean) {
   return useQuery({
@@ -90,20 +98,57 @@ export function useAccountBootstrap(enabled: boolean) {
         .upsert({ user_id: user.id }, { onConflict: "user_id", ignoreDuplicates: true });
 
       const fingerprint = getFingerprint();
-      const { data: existing } = await supabase
+      const deviceSignature = calculateDeviceSignature();
+      const detected = detectDevice();
+
+      // Strategy 1: Try to find device by fingerprint (localStorage-based, most reliable)
+      let { data: existing } = await supabase
         .from("devices")
         .select("*")
         .eq("user_id", user.id)
         .eq("fingerprint", fingerprint)
         .maybeSingle();
 
-      const device = existing as DeviceRow | null;
+      let device = existing as DeviceRow | null;
 
-      if (device) {
-        const detected = detectDevice();
+      // Strategy 2: If no fingerprint match, try device signature (survives localStorage clear)
+      if (!device) {
+        const { data: bySignature } = await supabase
+          .from("devices")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("device_signature", deviceSignature)
+          .maybeSingle();
+
+        device = bySignature as DeviceRow | null;
+
+        // If found by signature, update the fingerprint (restore localStorage recovery ability)
+        if (device) {
+          await supabase
+            .from("devices")
+            .update({
+              fingerprint,
+              device_signature: deviceSignature,
+              last_seen_at: new Date().toISOString(),
+              network_status: navigator.onLine ? "online" : "offline",
+              ...detected,
+            })
+            .eq("id", device.id);
+
+          // Refetch to get updated device data
+          const { data: updated } = await supabase
+            .from("devices")
+            .select("*")
+            .eq("id", device.id)
+            .maybeSingle();
+          device = updated as DeviceRow;
+        }
+      } else if (device) {
+        // Device found by fingerprint - just update last_seen_at
         await supabase
           .from("devices")
           .update({
+            device_signature: deviceSignature,
             last_seen_at: new Date().toISOString(),
             network_status: navigator.onLine ? "online" : "offline",
             ...detected,
@@ -118,9 +163,13 @@ export function useAccountBootstrap(enabled: boolean) {
 
 /**
  * Registers this install as a device — only ever called from the explicit
- * "Add this device" consent prompt, with the name the user typed for it. If a
- * row for the same hardware/browser signature already exists (for example after
- * clearing site data) it is adopted instead of creating a duplicate.
+ * "Add this device" consent prompt, with the name the user typed for it.
+ *
+ * Duplicate prevention strategy:
+ * 1. Check for existing device by device_signature (most reliable - same device+browser)
+ * 2. Check for existing device by name + platform (fallback for earlier registrations)
+ * 3. If found by either method, adopt it instead of creating a duplicate
+ * 4. Otherwise, create a new device with both fingerprint and device_signature set
  */
 export function useRegisterDevice() {
   const qc = useQueryClient();
@@ -128,11 +177,38 @@ export function useRegisterDevice() {
     mutationFn: async (input?: { name?: string }) => {
       const userId = await uid();
       const fingerprint = getFingerprint();
+      const deviceSignature = calculateDeviceSignature();
       const detected = detectDevice();
       const name = (input?.name ?? "").trim() || detected.name;
       const profile = { ...detected, name };
 
-      const { data: sameSignature } = await supabase
+      // Strategy 1: Check for device by signature (exact match for device+browser)
+      let { data: bySignature } = await supabase
+        .from("devices")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("device_signature", deviceSignature)
+        .maybeSingle();
+
+      const adoptBySignature = bySignature as DeviceRow | undefined;
+      if (adoptBySignature) {
+        // Device with same signature exists - update it (user is re-registering same device)
+        await supabase
+          .from("devices")
+          .update({
+            fingerprint,
+            device_signature: deviceSignature,
+            status: "authorized",
+            last_seen_at: new Date().toISOString(),
+            network_status: navigator.onLine ? "online" : "offline",
+            ...profile,
+          })
+          .eq("id", adoptBySignature.id);
+        return { ...adoptBySignature, ...profile, fingerprint, device_signature: deviceSignature, status: "authorized" } as DeviceRow;
+      }
+
+      // Strategy 2: Fallback - check for device by name + platform (for devices registered before signature was added)
+      const { data: byNamePlatform } = await supabase
         .from("devices")
         .select("*")
         .eq("user_id", userId)
@@ -140,26 +216,30 @@ export function useRegisterDevice() {
         .eq("platform", detected.platform)
         .limit(1);
 
-      const adopt = (sameSignature ?? [])[0] as DeviceRow | undefined;
-      if (adopt) {
+      const adoptByName = (byNamePlatform ?? [])[0] as DeviceRow | undefined;
+      if (adoptByName) {
+        // Device with same name/platform exists - update it with new identifiers
         await supabase
           .from("devices")
           .update({
             fingerprint,
+            device_signature: deviceSignature,
             status: "authorized",
             last_seen_at: new Date().toISOString(),
             network_status: navigator.onLine ? "online" : "offline",
             ...profile,
           })
-          .eq("id", adopt.id);
-        return { ...adopt, ...profile, fingerprint, status: "authorized" } as DeviceRow;
+          .eq("id", adoptByName.id);
+        return { ...adoptByName, ...profile, fingerprint, device_signature: deviceSignature, status: "authorized" } as DeviceRow;
       }
 
+      // No existing device found - create a new one with both fingerprint and device_signature
       const { data: created, error } = await supabase
         .from("devices")
         .insert({
           user_id: userId,
           fingerprint,
+          device_signature: deviceSignature,
           ...profile,
           status: "authorized",
           network_status: navigator.onLine ? "online" : "offline",

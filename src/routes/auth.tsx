@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { lovable } from "@/integrations/lovable/index";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BrandMark } from "@/components/brand-mark";
@@ -75,16 +74,14 @@ function AuthPage() {
 
   async function google() {
     setBusy(true);
-    const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+    const { data, error } = await supabase.auth.signInWithOAuth("google", {
+      redirectTo: window.location.origin,
     });
-    if (result.error) {
+    if (error) {
       setBusy(false);
       toast.error("Google sign-in failed. Please try again.");
       return;
     }
-    if (result.redirected) return;
-    navigate({ to: "/dashboard", replace: true });
   }
 
   async function resetPassword() {

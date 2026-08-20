@@ -100,3 +100,39 @@ export function detectBrowser(): string {
               ? "Safari"
               : "Web browser";
 }
+
+/**
+ * Calculates a stable device signature based on characteristics that persist
+ * across browser cache/localStorage clears. This allows recognizing the same
+ * physical device + browser combination even after clearing site data.
+ *
+ * The signature is derived from:
+ * - Platform (Windows, macOS, Linux, Android, iOS, Web)
+ * - Device type (phone vs desktop)
+ * - Browser name (Chrome, Firefox, Safari, Edge, etc.)
+ * - OS version (major version only for stability)
+ *
+ * This is privacy-conscious as all data comes from the User-Agent string,
+ * which is already sent to servers with every request.
+ *
+ * Limitations:
+ * - Not unique per device (two Windows 11 computers running Chrome will have similar signatures)
+ * - Different browsers on the same device will have different signatures
+ * - OS updates or browser updates might change the signature
+ * - Should only be used as a fallback when localStorage fingerprint is unavailable
+ */
+export function calculateDeviceSignature(): string {
+  const device = detectDevice();
+  const browser = detectBrowser();
+
+  // Extract major OS version only for better stability across OS updates
+  const osVersionMatch = device.os_version.match(/^\d+/);
+  const majorVersion = osVersionMatch ? osVersionMatch[0] : "0";
+
+  // Combine stable characteristics into a signature
+  // Format: platform-devicetype-browser-osmajorversion
+  const parts = [device.platform, device.device_type, browser.toLowerCase().replace(/\s+/g, "-"), majorVersion];
+  const signature = parts.join("|");
+
+  return signature;
+}
