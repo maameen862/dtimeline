@@ -1,42 +1,74 @@
 {
   "packageId": "com.maameen.dtimeline",
-  "host": "REPLACE_WITH_DEPLOYMENT_URL",
+  "host": "dtimeline.maameen862-913.workers.dev",
+
   "name": "Digital Life Timeline",
   "launcherName": "DL Timeline",
+
   "display": "standalone",
+
   "themeColor": "#05070f",
   "themeColorDark": "#05070f",
+
   "navigationColor": "#05070f",
   "navigationColorDark": "#05070f",
+
   "navigationDividerColor": "#05070f",
   "navigationDividerColorDark": "#05070f",
+
   "backgroundColor": "#05070f",
+
   "enableNotifications": true,
+
   "startUrl": "/",
-  "iconUrl": "https://REPLACE_WITH_DEPLOYMENT_URL/icon-512.png",
-  "maskableIconUrl": "https://REPLACE_WITH_DEPLOYMENT_URL/icon-maskable-512.png",
+
+  "iconUrl": "https://dtimeline.maameen862-913.workers.dev/icon-512.png",
+
+  "maskableIconUrl": "https://dtimeline.maameen862-913.workers.dev/icon-maskable-512.png",
+
   "splashScreenFadeOutDuration": 300,
+
   "signingKey": {
     "path": "./android.keystore",
     "alias": "dtimeline"
   },
+
   "appVersionName": "1.0.0",
   "appVersionCode": 1,
+
   "shortcuts": [],
+
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://REPLACE_WITH_DEPLOYMENT_URL/manifest.webmanifest",
+
+  "webManifestUrl": "https://dtimeline.maameen862-913.workers.dev/manifest.webmanifest",
+
   "fallbackType": "customtabs",
+
   "features": {},
-  "alphaDependencies": { "enabled": false },
+
+  "alphaDependencies": {
+    "enabled": false
+  },
+
   "enableSiteSettingsShortcut": true,
+
   "isChromeOSOnly": false,
+
   "isMetaQuest": false,
-  "fullScopeUrl": "https://REPLACE_WITH_DEPLOYMENT_URL/",
+
+  "fullScopeUrl": "https://dtimeline.maameen862-913.workers.dev/",
+
   "minSdkVersion": 23,
+
   "orientation": "any",
+
   "additionalTrustedOrigins": [],
+
   "retainedBundles": [],
+
   "protocolHandlers": [],
+
   "fileHandlers": [],
+
   "launchHandlerClientMode": "auto"
 }

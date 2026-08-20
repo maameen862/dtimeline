@@ -13,14 +13,16 @@ const config: CapacitorConfig = {
   appId: "com.maameen.dtimeline",
   appName: "DTimeline",
   webDir: ".output/public",
+
   android: {
     allowMixedContent: false,
   },
+
   server: {
-    url: "https://REPLACE_WITH_DEPLOYMENT_URL",
+    url: "https://dtimeline.maameen862-913.workers.dev",
     cleartext: false,
     androidScheme: "https",
-    hostname: "project--5e5d5a09-5786-4ac7-b6f7-fcb7b0117073.lovable.app",
+    hostname: "dtimeline.maameen862-913.workers.dev",
   },
 };
 
