@@ -1,0 +1,34 @@
+{
+  "name": "Digital Life Timeline",
+  "short_name": "DL Timeline",
+  "description": "Privacy-first cross-device activity timeline with cloud sync, device management, parental locks and usage analytics.",
+  "developer": {
+    "name": "MA Ameen",
+    "url": "https://lovable.dev"
+  },
+  "start_url": "/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05070f",
+  "theme_color": "#05070f",
+  "categories": ["productivity", "utilities", "health"],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "id": "com.maameen.dtimeline",
+      "url": "https://play.google.com/store/apps/details?id=com.maameen.dtimeline"
+    }
+  ],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
